@@ -7,26 +7,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c91f1db0-fa90-49b6-af69-338a27109b0d" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/BootstrapServer/BootstrapServer.iml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/BootstrapServer/src/lk/uom/dc/BootstrapServer.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/artifacts/BootstrapServer.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/artifacts/BootstrapServer_ear_exploded.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/artifacts/BootstrapServer_ear_exploded2.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/artifacts/BootstrapServer_jar.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/lk/uom/dc/FileNode.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/lk/uom/dc/FileNodeCommand.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/artifacts/FileNode_jar.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/libraries/JPA_2_0_2_0.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/BootstrapServer/src/META-INF/MANIFEST.MF" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/BootstrapServer/src/lk/uom/dc/Neighbour.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/BootstrapServer/src/META-INF/persistence.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" />
-      <change type="DELETED" beforePath="D:\My\Msc\Semester3\CS5429DC\Assignment1\DistributedFileSearch\src\lk\uom\dc\Main.java" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lk/uom/dc/Neighbour.java" afterPath="$PROJECT_DIR$/src/lk/uom/dc/Neighbour.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/modules.xml" afterPath="$PROJECT_DIR$/.idea/modules.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lk/uom/dc/FileNode.java" afterPath="$PROJECT_DIR$/src/lk/uom/dc/FileNode.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MOVED" beforePath="D:\My\Msc\Semester3\CS5429DC\Assignment1\DistributedFileSearch\untitled.iml" afterPath="$PROJECT_DIR$/FileNode.iml" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path=".idea/dataSources.local.xml" />
@@ -69,10 +51,11 @@
       <file leaf-file-name="FileNode.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/lk/uom/dc/FileNode.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.103975534" vertical-offset="102" max-vertical-offset="1326">
-              <caret line="8" column="0" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
+            <state vertical-scroll-proportion="0.2293578" vertical-offset="571" max-vertical-offset="935">
+              <caret line="65" column="31" selection-start-line="65" selection-start-column="31" selection-end-line="65" selection-end-column="31" />
               <folding>
                 <element signature="imports" expanded="true" />
+                <element signature="method#Register#0;class#FileNode#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -572,12 +555,12 @@
       <updated>1507970926666</updated>
       <workItem from="1507970929591" duration="1830000" />
       <workItem from="1507974264025" duration="1023000" />
-      <workItem from="1508470786677" duration="40496000" />
+      <workItem from="1508470786677" duration="41797000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="43349000" />
+    <option name="totallyTimeSpent" value="44650000" />
   </component>
   <component name="TodoView" selected-index="2">
     <todo-panel id="selected-file">
@@ -649,13 +632,23 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="22" />
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/lk/uom/dc/FileNode.java</url>
+          <line>47</line>
+          <properties />
+          <option name="timeStamp" value="25" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/lk/uom/dc/FileNode.java</url>
+          <line>62</line>
+          <properties />
+          <option name="timeStamp" value="26" />
+        </line-breakpoint>
+      </breakpoints>
+      <option name="time" value="27" />
     </breakpoint-manager>
-    <watches-manager>
-      <configuration name="Application">
-        <watch expression="neighbours" />
-      </configuration>
-    </watches-manager>
+    <watches-manager />
   </component>
   <component name="antWorkspaceConfiguration">
     <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
@@ -721,10 +714,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/lk/uom/dc/FileNode.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.103975534" vertical-offset="102" max-vertical-offset="1326">
-          <caret line="8" column="0" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
+        <state vertical-scroll-proportion="0.2293578" vertical-offset="571" max-vertical-offset="935">
+          <caret line="65" column="31" selection-start-line="65" selection-start-column="31" selection-end-line="65" selection-end-column="31" />
           <folding>
             <element signature="imports" expanded="true" />
+            <element signature="method#Register#0;class#FileNode#0" expanded="false" />
           </folding>
         </state>
       </provider>
