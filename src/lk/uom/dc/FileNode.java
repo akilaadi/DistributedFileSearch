@@ -39,7 +39,7 @@ public class FileNode {
     }
 
     public void Register() {
-        String query = String.format("REG %1$s %2$d %2$s", this.address, this.port, this.username);
+        String query = String.format("REG %1$s %2$d %3$s", this.address, this.port, this.username);
         query = String.format("%1$04d %2$s", query.length() + 5, query);
         FileNodeCommand receiveCommand = new FileNodeCommand(this.socket) {
             @Override
