@@ -63,6 +63,29 @@ public class FileNode {
         command.send(this.bAddress, this.bPort, query);
     }
 
+    private void Unregister(){
+
+        String quary = String.format("UNREG %1$s %2$d %2$s", this.address, this.port, this.username);
+
+        FileNodeCommand reciveCommand = new FileNodeCommand(this.socket){
+            @Override
+            public void run() {
+                String message = this.receive();
+                String[] tokens = message.split(" ");
+                if(tokens[1].equals("UNROK") && this.getAddress().equals(FileNode.this.bAddress) && FileNode.this.bPort == this.getPort()) {
+                    System.out.println(message);
+                }else{
+                    this.run();
+                }
+            }
+        };
+
+        reciveCommand.start();
+        FileNodeCommand command = new FileNodeCommand(this.socket);
+        command.send(this.bAddress, this.bPort, quary);
+        
+    }
+
     public void JoinNetwork() {
 
     }
