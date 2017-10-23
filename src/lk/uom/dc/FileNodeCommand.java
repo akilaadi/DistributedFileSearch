@@ -34,6 +34,10 @@ public class FileNodeCommand extends Thread {
         }
     }
 
+    public DatagramPacket getPacket(){
+        return this.packet;
+    }
+
     public void send(String address, int port, String message) {
         try {
             byte[] buf = message.getBytes();
