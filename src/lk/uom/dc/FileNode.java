@@ -53,10 +53,15 @@ public class FileNode {
                                 FileNode.this.Join(tokens[i - 1], Integer.parseInt(tokens[i]));
                             }
                         }
+                    } else if (tokens[1].equals("UNREG")) {
+                        FileNode.this.Unreg();
+
+                    } else if (tokens[1].equals("UNREGOK") && this.getAddress().equals(FileNode.this.bAddress) && FileNode.this.bPort == this.getPort()) {
+
                     } else if (tokens[1].equals("JOIN")) {
                         FileNode.this.JoinOk(tokens[2], Integer.parseInt(tokens[3]));
 
-                    } else if(tokens[1].equals("JOINOK")){
+                    } else if (tokens[1].equals("JOINOK")) {
                         FileNode.this.neighbours.add(
                                 new Neighbour(
                                         this.getPacket().getAddress().getHostAddress(),
@@ -76,7 +81,7 @@ public class FileNode {
     }
 
     public void Join(String address, int port) {
-        FileNodeCommand command = new FileNodeCommand(this.socket){
+        FileNodeCommand command = new FileNodeCommand(this.socket) {
             @Override
             public void run() {
                 String query = String.format("JOIN %1$s %2$d", FileNode.this.address, FileNode.this.port);
@@ -87,8 +92,20 @@ public class FileNode {
         command.start();
     }
 
+    private void Unreg() {
+        FileNodeCommand command = new FileNodeCommand(this.socket) {
+            @Override
+            public void run() {
+                String query = String.format("UNREG %1$s %2$d %2$s", FileNode.this.address, FileNode.this.port, FileNode.this.username);
+                query = String.format("%1$04d %2$s", query.length() + 5, query);
+                this.send(FileNode.this.bAddress, FileNode.this.bPort, query);
+            }
+        };
+        command.start();
+    }
+
     public void JoinOk(String address, int port) {
-        FileNodeCommand command = new FileNodeCommand(this.socket){
+        FileNodeCommand command = new FileNodeCommand(this.socket) {
             @Override
             public void run() {
                 String query = String.format("JOINOK 0");
