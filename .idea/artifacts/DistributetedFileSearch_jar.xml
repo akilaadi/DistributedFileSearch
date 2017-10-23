@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact name="DistributetedFileSearch:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/DistributetedFileSearch_jar</output-path>
+    <root id="root">
+      <element id="archive" name="DistributetedFileSearch.jar">
+        <element id="module-output" name="DistributetedFileSearch" />
+      </element>
+    </root>
+  </artifact>
+</component>

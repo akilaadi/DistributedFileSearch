@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="BootstrapServer">
+    <output-path>$PROJECT_DIR$/out/artifacts/BootstrapServer</output-path>
+    <root id="archive" name="BootstrapServer.jar" />
+  </artifact>
+</component>

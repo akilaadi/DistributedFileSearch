@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact name="FileNode:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/FileNode_jar</output-path>
+    <root id="root">
+      <element id="archive" name="FileNode.jar">
+        <element id="module-output" name="FileNode" />
+      </element>
+    </root>
+  </artifact>
+</component>

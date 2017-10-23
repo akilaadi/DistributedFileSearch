@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-ear" name="BootstrapServer:ear exploded2">
+    <output-path>$PROJECT_DIR$/out/artifacts/BootstrapServer_ear_exploded2</output-path>
+    <root id="root">
+      <element id="javaee-facet-resources" facet="BootstrapServer/javaeeApplication/javaEEApplication" />
+    </root>
+  </artifact>
+</component>
