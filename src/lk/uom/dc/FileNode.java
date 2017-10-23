@@ -55,14 +55,22 @@ public class FileNode {
                         }
                     } else if (tokens[1].equals("UNREG")) {
                         FileNode.this.Unreg();
-
+                        break;
                     } else if (tokens[1].equals("UNREGOK") && this.getAddress().equals(FileNode.this.bAddress) && FileNode.this.bPort == this.getPort()) {
-
+                        FileNode.this.Leave();
+                        break;
                     } else if (tokens[1].equals("JOIN")) {
                         FileNode.this.JoinOk(tokens[2], Integer.parseInt(tokens[3]));
 
                     } else if (tokens[1].equals("JOINOK")) {
                         FileNode.this.neighbours.add(
+                                new Neighbour(
+                                        this.getPacket().getAddress().getHostAddress(),
+                                        this.getPacket().getPort()));
+                    } else if (tokens[1].equals("LEAVE")) {
+                        FileNode.this.LeaveOk(tokens[2], Integer.parseInt(tokens[3]));
+                    } else if (tokens[1].equals("LEAVEOK")) {
+                        FileNode.this.neighbours.remove(
                                 new Neighbour(
                                         this.getPacket().getAddress().getHostAddress(),
                                         this.getPacket().getPort()));
@@ -80,6 +88,18 @@ public class FileNode {
         command.send(this.bAddress, this.bPort, query);
     }
 
+    public void Unreg() {
+        FileNodeCommand command = new FileNodeCommand(this.socket) {
+            @Override
+            public void run() {
+                String query = String.format("UNREG %1$s %2$d %2$s", FileNode.this.address, FileNode.this.port, FileNode.this.username);
+                query = String.format("%1$04d %2$s", query.length() + 5, query);
+                this.send(FileNode.this.bAddress, FileNode.this.bPort, query);
+            }
+        };
+        command.start();
+    }
+
     public void Join(String address, int port) {
         FileNodeCommand command = new FileNodeCommand(this.socket) {
             @Override
@@ -92,23 +112,38 @@ public class FileNode {
         command.start();
     }
 
-    private void Unreg() {
-        FileNodeCommand command = new FileNodeCommand(this.socket) {
-            @Override
-            public void run() {
-                String query = String.format("UNREG %1$s %2$d %2$s", FileNode.this.address, FileNode.this.port, FileNode.this.username);
-                query = String.format("%1$04d %2$s", query.length() + 5, query);
-                this.send(FileNode.this.bAddress, FileNode.this.bPort, query);
-            }
-        };
-        command.start();
-    }
-
     public void JoinOk(String address, int port) {
         FileNodeCommand command = new FileNodeCommand(this.socket) {
             @Override
             public void run() {
                 String query = String.format("JOINOK 0");
+                query = String.format("%1$04d %2$s", query.length() + 5, query);
+                this.send(address, port, query);
+            }
+        };
+        command.start();
+    }
+
+    public void Leave() {
+        FileNodeCommand command = new FileNodeCommand(this.socket) {
+            @Override
+            public void run() {
+                String query = String.format("LEAVE %1$s %2$d", FileNode.this.address, FileNode.this.port);
+                query = String.format("%1$04d %2$s", query.length() + 5, query);
+                for (int i = 0; i < FileNode.this.neighbours.size(); i ++) {
+                    this.send(FileNode.this.neighbours.get(i).getIp(), FileNode.this.neighbours.get(i).getPort(), query);
+                }
+            }
+        };
+        command.start();
+    }
+
+    public void LeaveOk(String address, int port) {
+        FileNodeCommand command = new FileNodeCommand(this.socket) {
+            @Override
+            public void run() {
+                FileNode.this.neighbours.remove(new Neighbour(address,port));
+                String query = String.format("LEAVEOK  0");
                 query = String.format("%1$04d %2$s", query.length() + 5, query);
                 this.send(address, port, query);
             }
