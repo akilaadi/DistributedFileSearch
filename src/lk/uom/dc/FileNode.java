@@ -148,7 +148,7 @@ public class FileNode {
                                 }
                             }
 
-                            if ((matchingFiles.size() > 0 && !messagePreviouslyFound) || hopCount == 0) {
+                            if ((matchingFiles.size() > 0  && !messagePreviouslyFound)|| (hopCount == 0 && matchingFiles.size() == 0)) {
                                 FileNode.this.SearchOK(ip, sourcePort, hopCount, matchingFiles);
                             }
 
@@ -270,10 +270,10 @@ public class FileNode {
                 }
                 Collections.shuffle(notRoutedNeighbors);
 
-                if(notRoutedNeighbors.size() > 0){
-                        this.send(notRoutedNeighbors.get(0).getIp(), notRoutedNeighbors.get(0).getPort(), query);
-                        FileNode.this.messageRoutingHistory.add(new Pair<>(messageId, notRoutedNeighbors.get(0)));
-                }else {
+                if (notRoutedNeighbors.size() > 0) {
+                    this.send(notRoutedNeighbors.get(0).getIp(), notRoutedNeighbors.get(0).getPort(), query);
+                    FileNode.this.messageRoutingHistory.add(new Pair<>(messageId, notRoutedNeighbors.get(0)));
+                } else {
                     Collections.shuffle(FileNode.this.neighbours);
                     this.send(FileNode.this.neighbours.get(0).getIp(), FileNode.this.neighbours.get(0).getPort(), query);
                 }
@@ -286,7 +286,11 @@ public class FileNode {
         FileNodeCommand command = new FileNodeCommand(this.socket) {
             @Override
             public void run() {
-                String query = String.format("SEROK %1$d %2$s %3$d %4$d %5$s", fileNames.size(), FileNode.this.address, FileNode.this.port, hopCount, String.join(" ", fileNames));
+                List<String> replacedWithUnderscore = new ArrayList<String>();
+                for (int i = 0; i < fileNames.size(); i++) {
+                    replacedWithUnderscore.add(fileNames.get(i).replace(" ", "_"));
+                }
+                String query = String.format("SEROK %1$d %2$s %3$d %4$d %5$s", fileNames.size(), FileNode.this.address, FileNode.this.port, hopCount, String.join(" ", replacedWithUnderscore));
                 query = String.format("%1$04d %2$s\n", query.length() + 5, query);
                 this.send(address, port, query);
             }
