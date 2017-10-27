@@ -141,13 +141,21 @@ public class FileNode {
                                 hopCount = 10;
                             }
 
-                            FileNode.this.messageRoutingHistory.add(new Pair<String, Neighbour>(messageId, new Neighbour(this.getPacket().getAddress().getHostAddress(), this.getPacket().getPort())));
-
-                            if (matchingFiles.size() > 0 || hopCount == 1) {
-                                FileNode.this.SearchOK(ip, sourcePort, hopCount - 1, matchingFiles);
+                            boolean messagePreviouslyFound = false;
+                            for (int i = 0; i < FileNode.this.messageRoutingHistory.size(); i++) {
+                                if (FileNode.this.messageRoutingHistory.get(i).getKey().equals(messageId)) {
+                                    messagePreviouslyFound = true;
+                                }
                             }
 
-                            if (hopCount > 1) {
+                            if ((matchingFiles.size() > 0 && !messagePreviouslyFound) || hopCount == 0) {
+                                FileNode.this.SearchOK(ip, sourcePort, hopCount, matchingFiles);
+                            }
+
+                            FileNode.this.messageRoutingHistory.add(new Pair<String, Neighbour>(messageId, new Neighbour(this.getPacket().getAddress().getHostAddress(), this.getPacket().getPort())));
+
+
+                            if (hopCount > 0) {
                                 FileNode.this.Search(ip, sourcePort, fileName, hopCount - 1, messageId);
                             }
                         }
@@ -239,10 +247,10 @@ public class FileNode {
 
                 Iterator<Neighbour> neighbourIterator = FileNode.this.neighbours.iterator();
                 Iterator<Pair<String, Neighbour>> routingHistoryIterator;
-                Neighbour currentNeighbour = FileNode.this.neighbours.get(0);
+                List<Neighbour> notRoutedNeighbors = new ArrayList<Neighbour>();
+                Neighbour currentNeighbour;
                 Pair<String, Neighbour> currentRoutingHistory;
-                boolean hasAlreadyRouted = false;
-                int iteratedNeighbors = 0;
+                boolean hasAlreadyRouted;
                 while (neighbourIterator.hasNext()) {
                     currentNeighbour = neighbourIterator.next();
                     routingHistoryIterator = FileNode.this.messageRoutingHistory.iterator();
@@ -253,17 +261,21 @@ public class FileNode {
                                 && currentNeighbour.getPort() == currentRoutingHistory.getValue().getPort()
                                 && currentRoutingHistory.getKey().equals(messageId)) {
                             hasAlreadyRouted = true;
+                            break;
                         }
                     }
                     if (!hasAlreadyRouted) {
-                        this.send(currentNeighbour.getIp(), currentNeighbour.getPort(), query);
-                        FileNode.this.messageRoutingHistory.add(new Pair<>(messageId, currentNeighbour));
-                        break;
+                        notRoutedNeighbors.add(currentNeighbour);
                     }
-                    iteratedNeighbors++;
                 }
-                if (iteratedNeighbors == FileNode.this.neighbours.size()) {
-                    FileNode.this.SearchOK(address, port, hopCount, new ArrayList<String>());
+                Collections.shuffle(notRoutedNeighbors);
+
+                if(notRoutedNeighbors.size() > 0){
+                        this.send(notRoutedNeighbors.get(0).getIp(), notRoutedNeighbors.get(0).getPort(), query);
+                        FileNode.this.messageRoutingHistory.add(new Pair<>(messageId, notRoutedNeighbors.get(0)));
+                }else {
+                    Collections.shuffle(FileNode.this.neighbours);
+                    this.send(FileNode.this.neighbours.get(0).getIp(), FileNode.this.neighbours.get(0).getPort(), query);
                 }
             }
         };
@@ -334,7 +346,7 @@ public class FileNode {
 
     private List<String> SearchFile(String query) {
         List<String> matchingFiles = new ArrayList<String>();
-        String[] tokens = query.split(" ");
+        String[] tokens = query.split("_");
         int matchWordCount = 0;
         for (int j = 0; j < this.files.size(); j++) {
             String[] words = this.files.get(j).split(" ");
