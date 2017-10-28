@@ -148,7 +148,7 @@ public class FileNode {
                                 }
                             }
 
-                            if ((matchingFiles.size() > 0  && !messagePreviouslyFound)|| (hopCount == 0 && matchingFiles.size() == 0 || FileNode.this.neighbours.size() == 0)) {
+                            if ((matchingFiles.size() > 0  && !messagePreviouslyFound)|| (hopCount == 0 && matchingFiles.size() == 0) || FileNode.this.neighbours.size() == 0) {
                                 FileNode.this.SearchOK(ip, sourcePort, hopCount, matchingFiles);
                             }
 
