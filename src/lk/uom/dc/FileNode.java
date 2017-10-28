@@ -155,7 +155,7 @@ public class FileNode {
                             FileNode.this.messageRoutingHistory.add(new Pair<String, Neighbour>(messageId, new Neighbour(this.getPacket().getAddress().getHostAddress(), this.getPacket().getPort())));
 
 
-                            if (hopCount > 0) {
+                            if (hopCount > 0 && FileNode.this.neighbours.size() > 0) {
                                 FileNode.this.Search(ip, sourcePort, fileName, hopCount - 1, messageId);
                             }
                         }
