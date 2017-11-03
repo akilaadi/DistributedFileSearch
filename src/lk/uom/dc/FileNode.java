@@ -448,10 +448,10 @@ public class FileNode {
                                 fileName = tokens[2];
                                 matchingFiles = fileNode.SearchFile(fileName);
                                 //TODO: how to get ip and sourcePort here.need tp check the logic
-                                ip = tokens[2];
-                                sourcePort = Integer.parseInt(tokens[3]);
-                                //ip = fileNode.getPacket().getAddress().getHostAddress();
-                                //sourcePort = fileNode.getPort();
+                                //ip = tokens[2];
+                                //sourcePort = Integer.parseInt(tokens[3]);
+                                ip = fileNode.getAddress();//.getHostAddress();
+                                sourcePort = fileNode.getPort();
                                 hopCount = 10;
                             }
 
