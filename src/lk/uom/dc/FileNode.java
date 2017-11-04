@@ -52,6 +52,7 @@ public class FileNode {
     }
 
     public void Receive() {
+
         FileNodeCommand receiveCommand = new FileNodeCommand(this.socket) {
             @Override
             public void run() {
@@ -102,6 +103,9 @@ public class FileNode {
                                     break;
                                 }
                             }
+
+
+
                             FileNode.this.LeaveOk(tokens[2], Integer.parseInt(tokens[3]));
                         } else if (tokens[1].equals("LEAVEOK")) {
                             Iterator<Neighbour> iterator = FileNode.this.neighbours.iterator();
@@ -171,6 +175,7 @@ public class FileNode {
 
     public void Reg() {
         String query = String.format("REG %1$s %2$d %3$s", this.address, this.port, this.username);
+        System.out.println(query);
         query = String.format("%1$04d %2$s", query.length() + 5, query);
         FileNodeCommand command = new FileNodeCommand(this.socket);
         command.send(this.bAddress, this.bPort, query);
@@ -244,7 +249,7 @@ public class FileNode {
             public void run() {
                 String query = String.format("SER %1$s %2$d %3$s %4$d %5$s", address, port, fileName, hopCount, messageId);
                 query = String.format("%1$04d %2$s", query.length() + 5, query);
-
+                System.out.println("Search Quary "+query);
                 Iterator<Neighbour> neighbourIterator = FileNode.this.neighbours.iterator();
                 Iterator<Pair<String, Neighbour>> routingHistoryIterator;
                 List<Neighbour> notRoutedNeighbors = new ArrayList<Neighbour>();
@@ -371,126 +376,93 @@ public class FileNode {
 
     public static void main(String[] args) throws UnknownHostException {
         FileNode fileNode = new FileNode(args[0], Integer.parseInt(args[1]), args[2]);
-        Thread thread1 = new Thread () {
-            public void run () {
-                // ... your code here
-                fileNode.Receive();
-                //fileNode.Reg();
-                System.out.println(String.format("File node started at %1s:%2d", fileNode.getAddress(), fileNode.getPort()));
-                System.out.println("Waiting for incoming queries..");
-            }
-        };
-        Thread thread2 = new Thread () {
-            public void run () {
-                // ... your code here
-                while (true) {
-                    System.out.println("Waiting for queries..");
-                    Scanner scan = new Scanner(System.in);
-                    String input = scan.nextLine();
-                    String[] tokens = input.split(" ");
-                    int token_count = tokens.length;
-                    if (token_count > 1) {
-                        /*for (int i=0; i<token_count;i++) {
-                            System.out.println(tokens[i]);
-                        }*/
-                        //this input should be processed
-                        if (tokens[1].equals("REG")) {
-                            //register with bootstrap
-                            fileNode.Reg();
-                            System.out.println("REG issued");
-                        }
-                        else if (tokens[1].equals("UNREG")) {
-                            //unregister
-                            fileNode.Unreg();
-                            System.out.println("UNREG issued");
-                        }
-                        else if (tokens[1].equals("JOIN")) {
-                            //join with other node
-                            System.out.println("JOIN issued");
-                            fileNode.neighbours.add(
-                                    new Neighbour(
-                                            tokens[2],
-                                            Integer.parseInt(tokens[3])));
-                            fileNode.JoinOk(tokens[2], Integer.parseInt(tokens[3]));
-                        }
-                        else if (tokens[1].equals("LEAVE")) {
-                            //leave the system
-                            Iterator<Neighbour> iterator = fileNode.neighbours.iterator();
-                            while (iterator.hasNext()) {
-                                Neighbour current = iterator.next();
-                                if (current.getIp().equals(tokens[2])
-                                        && current.getPort() == Integer.parseInt(tokens[3])) {
-                                    iterator.remove();
-                                    break;
-                                }
-                            }
-                            fileNode.LeaveOk(tokens[2], Integer.parseInt(tokens[3]));
-                        }
-                        else if (tokens[1].equals("SER")) {
-                            //search
-                            List<String> matchingFiles;
-                            String ip, fileName;
-                            int sourcePort;
-                            int hopCount;
-                            String messageId;
-                            if (tokens.length == 7) {
-                                messageId = tokens[6];
-                            } else {
-                                messageId = UUID.randomUUID().toString();
-                            }
-                            if (tokens.length > 3) {
-                                fileName = tokens[4];
-                                matchingFiles = fileNode.SearchFile(fileName);
-                                ip = tokens[2];
-                                sourcePort = Integer.parseInt(tokens[3]);
-                                hopCount = Integer.parseInt(tokens[5]);
-                            } else {
-                                fileName = tokens[2];
-                                matchingFiles = fileNode.SearchFile(fileName);
-                                //TODO: how to get ip and sourcePort here.need tp check the logic
-                                //ip = tokens[2];
-                                //sourcePort = Integer.parseInt(tokens[3]);
-                                ip = fileNode.getAddress();//.getHostAddress();
-                                sourcePort = fileNode.getPort();
-                                hopCount = 10;
-                            }
+        fileNode.Receive();
+        fileNode.Reg();
 
-                            boolean messagePreviouslyFound = false;
-                            for (int i = 0; i < fileNode.messageRoutingHistory.size(); i++) {
-                                if (fileNode.messageRoutingHistory.get(i).getKey().equals(messageId)) {
-                                    messagePreviouslyFound = true;
-                                }
-                            }
+        commandListner(fileNode);
 
-                            if ((matchingFiles.size() > 0  && !messagePreviouslyFound)|| (hopCount == 0 && matchingFiles.size() == 0) || fileNode.neighbours.size() == 0) {
-                                fileNode.SearchOK(ip, sourcePort, hopCount, matchingFiles);
-                            }
+    }
 
-                            fileNode.messageRoutingHistory.add(new Pair<String, Neighbour>(messageId, new Neighbour(fileNode.getAddress(), fileNode.getPort())));
+    private static void commandListner(FileNode fileNode) {
+        while (true) {
+            System.out.println("Waiting for queries..");
+            Scanner scan = new Scanner(System.in);
+            String input = scan.nextLine();
+            String[] tokens = input.split(" ");
+            int token_count = tokens.length;
+            if (token_count > 1) {
+                 /*for (int i=0; i<token_count;i++) {
+                    System.out.println(tokens[i]);
+                }*/
+                //this input should be processed
+                if (tokens[1].equals("REG")) {
+                    //register with bootstrap
+                    fileNode.Reg();
+                    System.out.println("REG issued");
+                }
+                else if (tokens[1].equals("UNREG")) {
+                    fileNode.Unreg();
+                    System.out.println("UNREG issued");
+                }
+                else if (tokens[1].equals("JOIN")) {
+                    //join with other node
+                    System.out.println("JOIN issued");
+                    fileNode.neighbours.add(
+                            new Neighbour(
+                                    tokens[2],
+                                    Integer.parseInt(tokens[3])));
+                    fileNode.JoinOk(tokens[2], Integer.parseInt(tokens[3]));
+                }
+                else if (tokens[1].equals("LEAVE")) {
+                    //leave the system
+                    fileNode.Leave();
+//                    fileNode.LeaveOk(fileNode.getAddress(), fileNode.getPort());
+                }
+                else if (tokens[1].equals("SHOW")){
 
+//                            FileNode.this.SendMessage(this.getPacket().getAddress().getHostAddress(), this.getPacket().getPort(), String.join("\n", FileNode.this.getFiles()));
 
-                            if (hopCount > 0 && fileNode.neighbours.size() > 0) {
-                                fileNode.Search(ip, sourcePort, fileName, hopCount - 1, messageId);
-                            }
-                        }
+                    List<String> files =  fileNode.getFiles();
 
-                    }
-                    else if (input.equalsIgnoreCase("exit")) {
-                        //send unreg message
-                        fileNode.Unreg();
-                        break;
+                    for (String filename : files){
+                        System.out.println(filename);
                     }
 
                 }
-                System.exit(0);
+                else if (tokens[1].equals("SER")) {
+                    //search
+                    List<String> matchingFiles = null;
+                    String ip = "", fileName;
+                    int sourcePort;
+                    int hopCount = 0;
+                    String messageId = UUID.randomUUID().toString();
+
+
+                        fileName = tokens[2];
+                        matchingFiles = fileNode.SearchFile(fileName);
+                        ip = fileNode.getAddress();
+                        sourcePort = fileNode.getPort();
+                        hopCount = Integer.parseInt(tokens[3]);
+
+
+                    if(matchingFiles.size() > 0){
+                        fileNode.SearchOK(ip,sourcePort,hopCount,matchingFiles);
+                    }
+
+
+                    if (hopCount > 0 && fileNode.neighbours.size() > 0) {
+                        fileNode.Search(ip, sourcePort, fileName, hopCount, messageId);
+                    }
+                }
 
             }
-        };
-        thread1.start();
-        thread2.start();
+            else if (input.equalsIgnoreCase("exit")) {
+                //send unreg message
+                fileNode.Unreg();
+                break;
+            }
 
-
-
-
+        }
+        System.exit(0);
     }
 }
