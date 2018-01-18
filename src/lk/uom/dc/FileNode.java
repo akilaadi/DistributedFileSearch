@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class FileNode {
     private String bAddress;
@@ -16,8 +17,22 @@ public class FileNode {
     private String username;
     DatagramSocket socket;
     private List<Neighbour> neighbours;
-    private List<String> files;
+    private List<Pair<Integer, String>> files;
     private List<Pair<String, Neighbour>> messageRoutingHistory;
+    private int lTimestamp = 0;
+    private ArrayList<FileReview> reviews;
+
+    public int getLTimestamp() {
+        return lTimestamp;
+    }
+
+    private void setLtimestamp(int lTimestamp) {
+        if (this.lTimestamp < lTimestamp) {
+            this.lTimestamp = lTimestamp + 1;
+        } else {
+            this.lTimestamp = this.lTimestamp + 1;
+        }
+    }
 
     public String getAddress() {
         return this.address;
@@ -27,7 +42,7 @@ public class FileNode {
         return this.port;
     }
 
-    public List<String> getFiles() {
+    public List<Pair<Integer, String>> getFiles() {
         return this.files;
     }
 
@@ -41,6 +56,7 @@ public class FileNode {
         this.username = username;
         this.address = InetAddress.getLocalHost().getHostAddress();
         this.messageRoutingHistory = new ArrayList<Pair<String, Neighbour>>();
+        this.reviews = new ArrayList<FileReview>();
         this.LoadFiles();
         /*Assign a port number to this file node between 3000 and 1023.*/
         this.port = (int) (Math.random() * (3000 - 1023) + 1023);
@@ -58,18 +74,25 @@ public class FileNode {
             public void run() {
                 while (true) {
                     String message = this.receive();
-                    message = message.replace("\n", "");
                     System.out.println(message);
+                    message = message.replace("\n", "");
+                    if (message.equals("")) {
+                        continue;
+                    }
                     try {
                         String[] tokens = message.split(" ");
-                        if (message.equals("RTTBL")) {
-                            String replyMessage = "\n";
+                        if (tokens[1].equals("RTTBL")) {
+                            String replyMessage = "";
                             for (int i = 0; i < FileNode.this.neighbours.size(); i++) {
                                 replyMessage += String.format("%1$s:%2$d\n", FileNode.this.neighbours.get(i).getIp(), FileNode.this.neighbours.get(i).getPort());
                             }
+                            if (FileNode.this.neighbours.size() == 0) {
+                                replyMessage = "No neighbours found!";
+                            }
                             FileNode.this.SendMessage(this.getPacket().getAddress().getHostAddress(), this.getPacket().getPort(), replyMessage);
-                        } else if (message.equals("FILES")) {
-                            FileNode.this.SendMessage(this.getPacket().getAddress().getHostAddress(), this.getPacket().getPort(), String.join("\n", FileNode.this.getFiles()));
+                        } else if (tokens[1].equals("FILES")) {
+                            FileNode.this.SendMessage(this.getPacket().getAddress().getHostAddress(), this.getPacket().getPort(),
+                                    String.join("\n", FileNode.this.getFiles().stream().map(t -> t.getKey() + "-" + t.getValue()).collect(Collectors.toList())));
                         } else if (tokens[1].equals("REGOK") && this.getAddress().equals(FileNode.this.bAddress) && FileNode.this.bPort == this.getPort()) {
                             FileNode.this.neighbours = new ArrayList<Neighbour>();
                             for (int i = 0; i < tokens.length; i += 2) {
@@ -103,9 +126,6 @@ public class FileNode {
                                     break;
                                 }
                             }
-
-
-
                             FileNode.this.LeaveOk(tokens[2], Integer.parseInt(tokens[3]));
                         } else if (tokens[1].equals("LEAVEOK")) {
                             Iterator<Neighbour> iterator = FileNode.this.neighbours.iterator();
@@ -120,8 +140,28 @@ public class FileNode {
                             if (FileNode.this.neighbours.size() == 0) {
                                 break;
                             }
+                        } else if (tokens[1].equals("COMM")) {
+                            FileNode.this.setLtimestamp(Integer.parseInt(tokens[tokens.length - 1]));
+                            FileNode.this.messageRoutingHistory.add(new Pair<String, Neighbour>(tokens[8], new Neighbour(this.getAddress(), this.getPort())));
+                            FileNode.this.Comment(tokens[2], Integer.parseInt(tokens[3]), Integer.parseInt(tokens[4])
+                                    , Integer.parseInt(tokens[5])
+                                    , tokens[6]
+                                    , Integer.parseInt(tokens[7]) - 1
+                                    , tokens[8]
+                                    , Integer.parseInt(tokens[9]));
+                        } else if (tokens[1].equals("RANK")) {
+                            FileNode.this.setLtimestamp(Integer.parseInt(tokens[tokens.length - 1]));
+                            FileNode.this.messageRoutingHistory.add(new Pair<String, Neighbour>(tokens[8], new Neighbour(this.getAddress(), this.getPort())));
+                            FileNode.this.Rank(tokens[2], Integer.parseInt(tokens[3]), Integer.parseInt(tokens[4])
+                                    , Integer.parseInt(tokens[5])
+                                    , Integer.parseInt(tokens[6])
+                                    , Integer.parseInt(tokens[7]) - 1
+                                    , tokens[8]
+                                    , Integer.parseInt(tokens[9]));
+                        } else if (tokens[1].equals("VIEWCOMM")) {
+                            FileNode.this.ViewComment(this.getAddress(), this.getPort(), Integer.parseInt(tokens[2]));
                         } else if (tokens[1].equals("SER")) {
-                            List<String> matchingFiles;
+                            List<Pair<Integer, String>> matchingFiles;
                             String ip, fileName;
                             int sourcePort;
                             int hopCount;
@@ -140,7 +180,7 @@ public class FileNode {
                             } else {
                                 fileName = tokens[2];
                                 matchingFiles = FileNode.this.SearchFile(fileName);
-                                ip = this.getPacket().getAddress().getHostAddress();
+                                ip = this.getAddress();
                                 sourcePort = this.getPort();
                                 hopCount = 10;
                             }
@@ -152,7 +192,7 @@ public class FileNode {
                                 }
                             }
 
-                            if ((matchingFiles.size() > 0  && !messagePreviouslyFound)|| (hopCount == 0 && matchingFiles.size() == 0) || FileNode.this.neighbours.size() == 0) {
+                            if ((matchingFiles.size() > 0 && !messagePreviouslyFound) || (hopCount == 0 && matchingFiles.size() == 0) || FileNode.this.neighbours.size() == 0) {
                                 FileNode.this.SearchOK(ip, sourcePort, hopCount, matchingFiles);
                             }
 
@@ -163,11 +203,11 @@ public class FileNode {
                                 FileNode.this.Search(ip, sourcePort, fileName, hopCount - 1, messageId);
                             }
                         }
-
                     } catch (Exception ex) {
                         FileNode.this.Error(this.getPacket().getAddress().getHostAddress(), this.getPacket().getPort());
                     }
                 }
+                System.exit(0);
             }
         };
         receiveCommand.start();
@@ -226,6 +266,9 @@ public class FileNode {
                 for (int i = 0; i < FileNode.this.neighbours.size(); i++) {
                     this.send(FileNode.this.neighbours.get(i).getIp(), FileNode.this.neighbours.get(i).getPort(), query);
                 }
+                if (FileNode.this.neighbours.size() == 0) {
+                    System.exit(0);
+                }
             }
         };
         command.start();
@@ -244,27 +287,147 @@ public class FileNode {
     }
 
     public void Search(String address, int port, String fileName, int hopCount, String messageId) {
+        String query = String.format("SER %1$s %2$d %3$s %4$d %5$s", address, port, fileName, hopCount, messageId);
+        query = String.format("%1$04d %2$s", query.length() + 5, query);
+        this.RandomWalk(messageId, query);
+    }
+
+    public void SearchOK(String address, int port, int hopCount, List<Pair<Integer, String>> fileNames) {
         FileNodeCommand command = new FileNodeCommand(this.socket) {
             @Override
             public void run() {
-                String query = String.format("SER %1$s %2$d %3$s %4$d %5$s", address, port, fileName, hopCount, messageId);
-                query = String.format("%1$04d %2$s", query.length() + 5, query);
-                System.out.println("Search Quary "+query);
+                List<String> replacedWithUnderscore = new ArrayList<String>();
+                for (int i = 0; i < fileNames.size(); i++) {
+                    replacedWithUnderscore.add(fileNames.get(i).getKey() + ":" + fileNames.get(i).getValue().replace(" ", "_"));
+                }
+                String query = String.format("SEROK %1$d %2$s %3$d %4$d %5$s", fileNames.size(), FileNode.this.address
+                        , FileNode.this.port, hopCount, String.join(" ", replacedWithUnderscore));
+                query = String.format("%1$04d %2$s\n", query.length() + 5, query);
+                this.send(address, port, query);
+            }
+        };
+        command.start();
+    }
+
+    public void Comment(String address, int port, int fileId, int commentId, String commentText, int hopCount, String messageId, int lTimestamp) {
+        Pair<Integer, String> file = this.FindFile(fileId);
+        if (file != null) {
+            if (commentId > 0) {
+                this.FindComment(fileId, commentId).addReply(commentText, address, port, lTimestamp);
+            } else {
+                if (this.FindReview(fileId) == null) {
+                    FileReview review = new FileReview(file.getKey(), file.getValue());
+                    review.addComment(commentText, address, port, lTimestamp);
+                    this.reviews.add(review);
+                } else {
+                    FileReview review = FindReview(fileId);
+                    review.addComment(commentText, address, port, lTimestamp);
+                }
+            }
+        }
+        String query = String.format("COMM %1$s %2$d %3$d %4$d %5$s %6$d %7$s %8$d", address, port, fileId, commentId, commentText, hopCount, messageId, lTimestamp);
+        query = String.format("%1$04d %2$s", query.length() + 5, query);
+        if (this.neighbours.size() > 0 && hopCount > 0) {
+            this.RandomWalk(messageId, query);
+        }
+    }
+
+    public void Rank(String address, int port, int fileId, int commentId, int rankValue, int hopCount, String messageId, int lTimestamp) {
+        Pair<Integer, String> file = this.FindFile(fileId);
+        if (file != null) {
+            if (commentId > 0) {
+                this.FindComment(fileId, commentId).rankComment(rankValue, address, port);
+            } else {
+                if (this.FindReview(fileId) == null) {
+                    FileReview review = new FileReview(file.getKey(), file.getValue());
+                    review.rankReview(rankValue, address, port);
+                    this.reviews.add(review);
+                } else {
+                    FileReview review = FindReview(fileId);
+                    review.rankReview(rankValue, address, port);
+                }
+            }
+        }
+        String query = String.format("RANK %1$s %2$d %3$d %4$d %5$d %6$d %7$s %8$d", address, port, fileId, commentId, rankValue, hopCount, messageId, lTimestamp);
+        query = String.format("%1$04d %2$s", query.length() + 5, query);
+        if (this.neighbours.size() > 0 && hopCount > 0) {
+            this.RandomWalk(messageId, query);
+        }
+    }
+
+    public void ViewComment(String address, int port, int fileId) {
+        FileReview review = this.FindReview(fileId);
+        if (review != null) {
+            this.SendMessage(address, port, review.toString());
+        } else {
+            this.SendMessage(address, port, "Review not found!");
+        }
+    }
+
+    private Pair<Integer, String> FindFile(int fileId) {
+        for (Pair<Integer, String> file : this.files) {
+            if (file.getKey() == fileId) {
+                return file;
+            }
+        }
+        return null;
+    }
+
+    private FileReview FindReview(int fileId) {
+        for (FileReview review : this.reviews) {
+            if (review.getFileId() == fileId) {
+                return review;
+            }
+        }
+        return null;
+    }
+
+    private Comment FindCommentRecursive(int commentId, ArrayList<Comment> comments) {
+        Comment result = null;
+        for (Comment comment : comments) {
+            if (comment.getCommentId() == commentId) {
+                result = comment;
+                break;
+            } else {
+                if (comment.getReplies().size() > 0) {
+                    result = this.FindCommentRecursive(commentId, comment.getReplies());
+                    if (result != null) {
+                        break;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private Comment FindComment(int fileId, int commentId) {
+        FileReview review = this.FindReview(fileId);
+        if (review != null) {
+            return this.FindCommentRecursive(commentId, review.getComments());
+        }
+        return null;
+
+    }
+
+    public void RandomWalk(String messageId, String query) {
+        FileNodeCommand command = new FileNodeCommand(this.socket) {
+            @Override
+            public void run() {
                 Iterator<Neighbour> neighbourIterator = FileNode.this.neighbours.iterator();
                 Iterator<Pair<String, Neighbour>> routingHistoryIterator;
                 List<Neighbour> notRoutedNeighbors = new ArrayList<Neighbour>();
                 Neighbour currentNeighbour;
-                Pair<String, Neighbour> currentRoutingHistory;
+                Pair<String, Neighbour> currentRoutingHistoryRecord;
                 boolean hasAlreadyRouted;
                 while (neighbourIterator.hasNext()) {
                     currentNeighbour = neighbourIterator.next();
                     routingHistoryIterator = FileNode.this.messageRoutingHistory.iterator();
                     hasAlreadyRouted = false;
                     while (routingHistoryIterator.hasNext()) {
-                        currentRoutingHistory = routingHistoryIterator.next();
-                        if (currentNeighbour.getIp().equals(currentRoutingHistory.getValue().getIp())
-                                && currentNeighbour.getPort() == currentRoutingHistory.getValue().getPort()
-                                && currentRoutingHistory.getKey().equals(messageId)) {
+                        currentRoutingHistoryRecord = routingHistoryIterator.next();
+                        if (currentNeighbour.getIp().equals(currentRoutingHistoryRecord.getValue().getIp())
+                                && currentNeighbour.getPort() == currentRoutingHistoryRecord.getValue().getPort()
+                                && currentRoutingHistoryRecord.getKey().equals(messageId)) {
                             hasAlreadyRouted = true;
                             break;
                         }
@@ -282,22 +445,6 @@ public class FileNode {
                     Collections.shuffle(FileNode.this.neighbours);
                     this.send(FileNode.this.neighbours.get(0).getIp(), FileNode.this.neighbours.get(0).getPort(), query);
                 }
-            }
-        };
-        command.start();
-    }
-
-    public void SearchOK(String address, int port, int hopCount, List<String> fileNames) {
-        FileNodeCommand command = new FileNodeCommand(this.socket) {
-            @Override
-            public void run() {
-                List<String> replacedWithUnderscore = new ArrayList<String>();
-                for (int i = 0; i < fileNames.size(); i++) {
-                    replacedWithUnderscore.add(fileNames.get(i).replace(" ", "_"));
-                }
-                String query = String.format("SEROK %1$d %2$s %3$d %4$d %5$s", fileNames.size(), FileNode.this.address, FileNode.this.port, hopCount, String.join(" ", replacedWithUnderscore));
-                query = String.format("%1$04d %2$s\n", query.length() + 5, query);
-                this.send(address, port, query);
             }
         };
         command.start();
@@ -327,38 +474,37 @@ public class FileNode {
     }
 
     private void LoadFiles() {
-        List<String> allFiles = new ArrayList<String>(
-                Arrays.asList("Adventures of Tintin",
-                        "Jack and Jill",
-                        "Glee",
-                        "The Vampire Diarie",
-                        "King Arthur",
-                        "Windows XP",
-                        "Harry Potter",
-                        "Kung Fu Panda",
-                        "Lady Gaga",
-                        "Twilight",
-                        "Windows 8",
-                        "Mission Impossible",
-                        "Turn Up The Music",
-                        "Super Mario",
-                        "American Pickers",
-                        "Microsoft Office 2010",
-                        "Happy Feet",
-                        "Modern Family",
-                        "American Idol",
-                        "Hacking for Dummies")
-        );
+        List<Pair<Integer, String>> allFiles = new ArrayList<Pair<Integer, String>>(
+                Arrays.asList(new Pair<Integer, String>(1, "Adventures of Tintin"),
+                        new Pair<Integer, String>(2, "Jack and Jill"),
+                        new Pair<Integer, String>(3, "Glee"),
+                        new Pair<Integer, String>(4, "The Vampire Diarie"),
+                        new Pair<Integer, String>(5, "King Arthur"),
+                        new Pair<Integer, String>(6, "Windows XP"),
+                        new Pair<Integer, String>(7, "Harry Potter"),
+                        new Pair<Integer, String>(8, "Kung Fu Panda"),
+                        new Pair<Integer, String>(9, "Lady Gaga"),
+                        new Pair<Integer, String>(10, "Twilight"),
+                        new Pair<Integer, String>(11, "Hacking for Dummies"),
+                        new Pair<Integer, String>(12, "Windows 8"),
+                        new Pair<Integer, String>(13, "Mission Impossible"),
+                        new Pair<Integer, String>(14, "Turn Up The Music"),
+                        new Pair<Integer, String>(15, "Super Mario"),
+                        new Pair<Integer, String>(16, "American Pickers"),
+                        new Pair<Integer, String>(17, "Microsoft Office 2010"),
+                        new Pair<Integer, String>(18, "Happy Feet"),
+                        new Pair<Integer, String>(19, "Modern Family"),
+                        new Pair<Integer, String>(20, "American Idol")));
         Collections.shuffle(allFiles);
         this.files = allFiles.subList(0, 10);
     }
 
-    private List<String> SearchFile(String query) {
-        List<String> matchingFiles = new ArrayList<String>();
+    private List<Pair<Integer, String>> SearchFile(String query) {
+        List<Pair<Integer, String>> matchingFiles = new ArrayList<Pair<Integer, String>>();
         String[] tokens = query.split("_");
         int matchWordCount = 0;
         for (int j = 0; j < this.files.size(); j++) {
-            String[] words = this.files.get(j).split(" ");
+            String[] words = this.files.get(j).getValue().split(" ");
             matchWordCount = 0;
             for (int i = 0; i < tokens.length; i++) {
                 for (int z = 0; z < words.length; z++) {
@@ -385,83 +531,60 @@ public class FileNode {
 
     private static void commandListner(FileNode fileNode) {
         while (true) {
-            System.out.println("Waiting for queries..");
-            Scanner scan = new Scanner(System.in);
-            String input = scan.nextLine();
-            String[] tokens = input.split(" ");
-            int token_count = tokens.length;
-            if (token_count > 1) {
-                 /*for (int i=0; i<token_count;i++) {
-                    System.out.println(tokens[i]);
-                }*/
-                //this input should be processed
-                if (tokens[1].equals("REG")) {
-                    //register with bootstrap
-                    fileNode.Reg();
-                    System.out.println("REG issued");
-                }
-                else if (tokens[1].equals("UNREG")) {
-                    fileNode.Unreg();
-                    System.out.println("UNREG issued");
-                }
-                else if (tokens[1].equals("JOIN")) {
-                    //join with other node
-                    System.out.println("JOIN issued");
-                    fileNode.neighbours.add(
-                            new Neighbour(
-                                    tokens[2],
-                                    Integer.parseInt(tokens[3])));
-                    fileNode.JoinOk(tokens[2], Integer.parseInt(tokens[3]));
-                }
-                else if (tokens[1].equals("LEAVE")) {
-                    //leave the system
-                    fileNode.Leave();
-//                    fileNode.LeaveOk(fileNode.getAddress(), fileNode.getPort());
-                }
-                else if (tokens[1].equals("SHOW")){
-
-//                            FileNode.this.SendMessage(this.getPacket().getAddress().getHostAddress(), this.getPacket().getPort(), String.join("\n", FileNode.this.getFiles()));
-
-                    List<String> files =  fileNode.getFiles();
-
-                    for (String filename : files){
-                        System.out.println(filename);
+            try {
+                System.out.println("Waiting for queries..");
+                Scanner scan = new Scanner(System.in);
+                String input = scan.nextLine();
+                String[] tokens = input.split(" ");
+                if (input.equals("RTTBL")) {
+                    String replyMessage = "";
+                    for (int i = 0; i < fileNode.neighbours.size(); i++) {
+                        replyMessage += String.format("%1$s:%2$d\n", fileNode.neighbours.get(i).getIp(), fileNode.neighbours.get(i).getPort());
                     }
-
-                }
-                else if (tokens[1].equals("SER")) {
-                    //search
-                    List<String> matchingFiles = null;
-                    String ip = "", fileName;
-                    int sourcePort;
-                    int hopCount = 0;
+                    if (fileNode.neighbours.size() == 0) {
+                        replyMessage = "No neighbours found!";
+                    }
+                    System.out.println(replyMessage);
+                } else if (input.equals("FILES")) {
+                    System.out.println(String.join("\n", fileNode.getFiles().stream().map(t -> t.getKey() + "-" + t.getValue()).collect(Collectors.toList())));
+                } else if (input.equals("THIS")) {
+                    System.out.println(String.format("%1$s:%2$s", fileNode.getAddress(), fileNode.getPort()));
+                } else if (input.equals("UNREG")) {
+                    input = String.format("%1$04d %2$s", input.length() + 5, input);
+                    fileNode.SendMessage(fileNode.getAddress(), fileNode.getPort(), input);
+                } else if (input.length() > 3 && input.substring(0, 3).equals("SER")) {
+                    input = String.format("%1$04d %2$s", input.length() + 5, input);
+                    fileNode.SendMessage(fileNode.getAddress(), fileNode.getPort(), input);
+                } else if (tokens[0].equals("COMM")) {
                     String messageId = UUID.randomUUID().toString();
-
-
-                        fileName = tokens[2];
-                        matchingFiles = fileNode.SearchFile(fileName);
-                        ip = fileNode.getAddress();
-                        sourcePort = fileNode.getPort();
-                        hopCount = Integer.parseInt(tokens[3]);
-
-
-                    if(matchingFiles.size() > 0){
-                        fileNode.SearchOK(ip,sourcePort,hopCount,matchingFiles);
-                    }
-
-
-                    if (hopCount > 0 && fileNode.neighbours.size() > 0) {
-                        fileNode.Search(ip, sourcePort, fileName, hopCount, messageId);
-                    }
+                    input = String.format("COMM %1$s %2$d %3$d %4$d %5$s %6$d %7$s %8$d", fileNode.getAddress(), fileNode.getPort()
+                            , Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2])
+                            , tokens[3], 10, messageId, fileNode.getLTimestamp());
+                    input = String.format("%1$04d %2$s", input.length() + 5, input);
+                    fileNode.SendMessage(fileNode.getAddress(), fileNode.getPort(), input);
+                } else if (tokens[0].equals("RANK")) {
+                    String messageId = UUID.randomUUID().toString();
+                    input = String.format("RANK %1$s %2$d %3$d %4$d %5$d %6$d %7$s %8$d", fileNode.getAddress(), fileNode.getPort()
+                            , Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2])
+                            , Integer.parseInt(tokens[3]), 10, messageId, fileNode.getLTimestamp());
+                    input = String.format("%1$04d %2$s", input.length() + 5, input);
+                    fileNode.SendMessage(fileNode.getAddress(), fileNode.getPort(), input);
+                } else if (tokens[0].equals("VIEWCOMM")) {
+                    input = String.format("VIEWCOMM %1$d", Integer.parseInt(tokens[1]));
+                    input = String.format("%1$04d %2$s", input.length() + 5, input);
+                    fileNode.SendMessage(tokens[2], Integer.parseInt(tokens[3]), input);
+                } else if (input.equalsIgnoreCase("exit")) {
+                    //send unreg message
+                    fileNode.Unreg();
+                    break;
+                } else {
+                    System.out.println("Invalid command!");
                 }
 
-            }
-            else if (input.equalsIgnoreCase("exit")) {
-                //send unreg message
-                fileNode.Unreg();
-                break;
-            }
 
+            } catch (Exception ex) {
+                System.out.println("Invalid command!");
+            }
         }
         System.exit(0);
     }
