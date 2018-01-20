@@ -32,6 +32,7 @@ public class FileReview {
             return;
         }
         this.comments.add(new Comment(commentText,commentorAddress,commentorPort,lTimestamp));
+        this.comments.sort((a,b)->Double.compare(a.getlTimestamp(),b.getlTimestamp()));
     }
 
     public String toString() {

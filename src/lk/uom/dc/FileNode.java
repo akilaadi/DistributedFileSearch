@@ -548,7 +548,7 @@ public class FileNode {
                 } else if (input.equals("FILES")) {
                     System.out.println(String.join("\n", fileNode.getFiles().stream().map(t -> t.getKey() + "-" + t.getValue()).collect(Collectors.toList())));
                 } else if (input.equals("THIS")) {
-                    System.out.println(String.format("%1$s:%2$s", fileNode.getAddress(), fileNode.getPort()));
+                    System.out.println(String.format("%1$s:%2$s Timestamp:%3$d", fileNode.getAddress(), fileNode.getPort(),fileNode.getLTimestamp()));
                 } else if (input.equals("UNREG")) {
                     input = String.format("%1$04d %2$s", input.length() + 5, input);
                     fileNode.SendMessage(fileNode.getAddress(), fileNode.getPort(), input);

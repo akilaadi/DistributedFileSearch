@@ -53,6 +53,7 @@ public class Comment {
             return;
         }
         this.replies.add(new Comment(replyText, commentorAddress, commentorPort, lTimestamp));
+        this.replies.sort((a,b)->Double.compare(a.getlTimestamp(),b.getlTimestamp()));
     }
 
     public String toString(String indentSpace) {
