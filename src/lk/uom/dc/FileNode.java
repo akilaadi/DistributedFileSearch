@@ -166,7 +166,8 @@ public class FileNode {
                             int sourcePort;
                             int hopCount;
                             String messageId;
-                            if (tokens.length == 7) {
+                            int ltimestamp;
+                            if (tokens.length == 8) {
                                 messageId = tokens[6];
                             } else {
                                 messageId = UUID.randomUUID().toString();
@@ -177,12 +178,16 @@ public class FileNode {
                                 ip = tokens[2];
                                 sourcePort = Integer.parseInt(tokens[3]);
                                 hopCount = Integer.parseInt(tokens[5]);
+                                FileNode.this.setLtimestamp(Integer.parseInt(tokens[tokens.length - 1]));
+                                ltimestamp = Integer.parseInt(tokens[tokens.length - 1]);
                             } else {
                                 fileName = tokens[2];
                                 matchingFiles = FileNode.this.SearchFile(fileName);
                                 ip = this.getAddress();
                                 sourcePort = this.getPort();
                                 hopCount = 10;
+                                FileNode.this.setLtimestamp(FileNode.this.getLTimestamp());
+                                ltimestamp = FileNode.this.getLTimestamp();
                             }
 
                             boolean messagePreviouslyFound = false;
@@ -200,7 +205,7 @@ public class FileNode {
 
 
                             if (hopCount > 0 && FileNode.this.neighbours.size() > 0) {
-                                FileNode.this.Search(ip, sourcePort, fileName, hopCount - 1, messageId);
+                                FileNode.this.Search(ip, sourcePort, fileName, hopCount - 1, messageId,ltimestamp);
                             }
                         }
                     } catch (Exception ex) {
@@ -286,8 +291,8 @@ public class FileNode {
         command.start();
     }
 
-    public void Search(String address, int port, String fileName, int hopCount, String messageId) {
-        String query = String.format("SER %1$s %2$d %3$s %4$d %5$s", address, port, fileName, hopCount, messageId);
+    public void Search(String address, int port, String fileName, int hopCount, String messageId,int lTimestamp) {
+        String query = String.format("SER %1$s %2$d %3$s %4$d %5$s %6$d", address, port, fileName, hopCount, messageId,lTimestamp);
         query = String.format("%1$04d %2$s", query.length() + 5, query);
         this.RandomWalk(messageId, query);
     }
